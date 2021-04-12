@@ -210,7 +210,7 @@ if __name__ == "__main__":
     transaction_detail_df_7.writeStream \
       .trigger(processingTime='5 seconds') \
       .format("json") \
-      .option("path", "/tmp/data") \
+      .option("path", "hdfs://localhost:9000/tmp/data") \
       .option("checkpointLocation", "/home/enes/Applications/data") \
       .start()
 
