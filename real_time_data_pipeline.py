@@ -211,7 +211,7 @@ if __name__ == "__main__":
       .trigger(processingTime='5 seconds') \
       .format("json") \
       .option("path", "/tmp/data") \
-      .option("checkpointLocation", "/data/checkpoint") \
+      .option("checkpointLocation", "/home/enes/Applications/data") \
       .start()
 
     transaction_detail_df_7.printSchema()
