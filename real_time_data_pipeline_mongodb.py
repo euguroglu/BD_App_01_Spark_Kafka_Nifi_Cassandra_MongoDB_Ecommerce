@@ -23,6 +23,8 @@ mongodb_user_name = "demouser"
 mongodb_password = "demouser"
 mongodb_database_name = "trans_db"
 
+spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
+
 def save_to_cassandra_table(current_df, epoc_id):
     print("Inside save_to_cassandra_table function")
     print("Printing epoc_id: ")
