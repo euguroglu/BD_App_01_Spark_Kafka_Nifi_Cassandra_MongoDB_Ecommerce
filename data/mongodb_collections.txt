@@ -14,7 +14,7 @@ mongo
 
 use trans_db;
 
-db.createUser({user: "demouser", pwd: "demouser", roles:[{role: "readWrite", db: "trans_db"}]}
+db.createUser({user:"demouser",pwd:"demouser",roles:[{role:"readWrite",db:"trans_db"}]})
 
 
 mongo -u demouser -p --authenticationDatabase trans_db
