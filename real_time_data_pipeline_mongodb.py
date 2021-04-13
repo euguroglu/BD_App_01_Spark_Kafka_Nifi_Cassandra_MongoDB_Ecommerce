@@ -23,7 +23,7 @@ mongodb_user_name = "demouser"
 mongodb_password = "demouser"
 mongodb_database_name = "trans_db"
 
-spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
+
 
 def save_to_cassandra_table(current_df, epoc_id):
     print("Inside save_to_cassandra_table function")
@@ -69,6 +69,7 @@ if __name__ == "__main__":
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .getOrCreate()
 
+    spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
     spark.sparkContext.setLogLevel("ERROR")
 
     # Construct a streaming DataFrame that reads from transmessage
