@@ -60,16 +60,16 @@ app.layout = dhtml.Div(
             children="Real-Time Dashboard for Retail Sales Analysis",
             style={
                 "textAlign": "center",
-                "color": "#34A853",
+                "color": "#71329F",
                 'font-weight': 'bold',
                 'font-family': 'Verdana'
             }),
         dhtml.Div(
             id = "current_refresh_time",
-            children="Current Refresh Time: ",
+            children="Latest Refresh: ",
             style={
                 "textAlign": "center",
-                "color": "#EA4335",
+                "color": "#35329F",
                 'font-weight': 'bold',
                 'fontSize': 12,
                 'font-family': 'Verdana'
