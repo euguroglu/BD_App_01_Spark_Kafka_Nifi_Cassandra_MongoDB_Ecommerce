@@ -78,6 +78,7 @@ if __name__ == "__main__":
         .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS_CONS) \
         .option("subscribe", KAFKA_TOPIC_NAME_CONS) \
         .option("startingOffsets", "latest") \
+        .option("failOnDataLoss", "false") \
         .load()
 
     print("Printing Schema of transaction_detail_df: ")
