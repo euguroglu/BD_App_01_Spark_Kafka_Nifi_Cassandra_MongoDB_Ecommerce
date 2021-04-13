@@ -157,5 +157,5 @@ def update_table(n):
 if __name__ == "__main__":
     print("Starting Real-Time Dashboard For  ... ")
     #app.run_server(port=8090, debug=True)
-    app.run_server(host="localhost",port=8090, debug=True)
+    app.run_server(host="0.0.0.0",port=8090, debug=True)
 # Code Block 8 Ends
