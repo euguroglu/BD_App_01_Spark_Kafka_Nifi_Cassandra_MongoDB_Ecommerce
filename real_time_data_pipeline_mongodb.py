@@ -63,6 +63,8 @@ if __name__ == "__main__":
         .builder \
         .appName("Real-Time Data Pipeline") \
         .master("local[*]") \
+        .config('spark.jars.packages', 'org.mongodb.spark:mongo-spark-connector_2.12:2.4.1')\
+        .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
@@ -219,8 +221,8 @@ if __name__ == "__main__":
     transaction_detail_df_7.writeStream \
       .trigger(processingTime='5 seconds') \
       .format("json") \
-      .option("path", "/data/json/trans_detail_raw_data") \
-      .option("checkpointLocation", "/data/checkpoint/trans_detail_raw_data") \
+      .option("path", "hdfs://localhost:9000/tmp/data") \
+      .option("checkpointLocation", "/home/enes/Applications/data") \
       .start()
 
     transaction_detail_df_8 = transaction_detail_df_7.select(
@@ -262,7 +264,7 @@ if __name__ == "__main__":
     .start()
 
     country_wise_total_sales_count_df = transaction_detail_df_9.groupby('nationality').agg(
-        fn.count('nationality').alias('tran_country_count'))
+        fn.count('tran_amount').alias('tran_country_count'))
 
     mongodb_collection_name_1 = "country_wise_total_sales_count"
 
