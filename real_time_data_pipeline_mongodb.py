@@ -24,7 +24,7 @@ mongodb_password = "demouser"
 mongodb_database_name = "trans_db"
 
 
-
+# Cassandra database save foreachBatch udf function
 def save_to_cassandra_table(current_df, epoc_id):
     print("Inside save_to_cassandra_table function")
     print("Printing epoc_id: ")
@@ -41,6 +41,7 @@ def save_to_cassandra_table(current_df, epoc_id):
     .save()
     print("Exit out of save_to_cassandra_table function")
 
+# MongoDB database save foreachBatch udf function
 def save_to_mongodb_collection(current_df, epoc_id, mongodb_collection_name):
     print("Inside save_to_mongodb_collection function")
     print("Printing epoc_id: ")
@@ -61,6 +62,7 @@ def save_to_mongodb_collection(current_df, epoc_id, mongodb_collection_name):
 if __name__ == "__main__":
     print("Real-Time Data Pipeline Started ...")
 
+# Create spark session
     spark = SparkSession \
         .builder \
         .appName("Real-Time Data Pipeline") \
@@ -69,10 +71,12 @@ if __name__ == "__main__":
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .getOrCreate()
 
+# Setting timeParserPolicy as Legacy to get previous version timeparse behaviour
     spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
+# Setting log level to error
     spark.sparkContext.setLogLevel("ERROR")
 
-    # Construct a streaming DataFrame that reads from transmessage
+# Construct a streaming DataFrame that reads from kafka topic
     transaction_detail_df = spark \
         .readStream \
         .format("kafka") \
@@ -85,7 +89,8 @@ if __name__ == "__main__":
     print("Printing Schema of transaction_detail_df: ")
     transaction_detail_df.printSchema()
 
-    # Code Block 4 Starts Here
+
+# Schema
     transaction_detail_schema = StructType([
       StructField("results", ArrayType(StructType([
         StructField("user", StructType([
@@ -129,8 +134,9 @@ if __name__ == "__main__":
         StructField("tran_amount", DoubleType())
       ]))
     ])
-    # Code Block 4 Ends Here
 
+
+#Deserialize kafka value and flatten prepare dataframe
     transaction_detail_df_1 = transaction_detail_df.selectExpr("CAST(value AS STRING)")
 
     transaction_detail_df_2 = transaction_detail_df_1.select(from_json(col("value"), transaction_detail_schema).alias("message_detail"))
@@ -181,6 +187,7 @@ if __name__ == "__main__":
       col("tran_amount")
     )
 
+# Create user defined function to generate/simulate card type for each user
     def randomCardType(transaction_card_type_list):
         return random.choice(transaction_card_type_list)
 
@@ -217,11 +224,15 @@ if __name__ == "__main__":
       concat(col("product_id"), round(rand() * 100, 0).cast(IntegerType())).alias("product_id"),
       round(rand() * col("tran_amount"), 2).alias("tran_amount")
     )
+# Card type, transaction amount and product id is hard coded into data inside of apache nifi jolt transform processor
+# Card type hard coded as a list ['Visa, MasterCard etc.']
+# Here card type is randomly generated/selected using user defined function
 
+# Convert unixtime to timestamp
     transaction_detail_df_7 = transaction_detail_df_6.withColumn("tran_date",
       from_unixtime(col("registered"), "yyyy-MM-dd HH:mm:ss"))
 
-    # Write raw data into HDFS
+# Write raw data into HDFS
     transaction_detail_df_7.writeStream \
       .trigger(processingTime='5 seconds') \
       .format("json") \
@@ -229,6 +240,7 @@ if __name__ == "__main__":
       .option("checkpointLocation", "/home/enes/Applications/data") \
       .start()
 
+# Get hot data for processing
     transaction_detail_df_8 = transaction_detail_df_7.select(
       col("user_id"),
       col("first_name"),
@@ -244,6 +256,7 @@ if __name__ == "__main__":
       col("product_id"),
       col("tran_amount"))
 
+# Save data to cassandra
     transaction_detail_df_8 \
     .writeStream \
     .trigger(processingTime='5 seconds') \
@@ -251,15 +264,18 @@ if __name__ == "__main__":
     .foreachBatch(save_to_cassandra_table) \
     .start()
 
-    # Data Processing/Data Transformation
+# Data Processing/Data Transformation
     transaction_detail_df_9 = transaction_detail_df_8.withColumn("tran_year", \
       year(to_timestamp(col("tran_date"), "yyyy")))
 
+# Get year wise total sales
     year_wise_total_sales_count_df = transaction_detail_df_9.groupby('tran_year').agg(
         fn.count('tran_amount').alias('tran_year_count'))
 
+# Create collection name for year wise aggregated data mongodb collection
     mongodb_collection_name = "year_wise_total_sales_count"
 
+# Write streaming dataframe into mongodb
     year_wise_total_sales_count_df \
     .writeStream \
     .trigger(processingTime='5 seconds') \
@@ -267,11 +283,14 @@ if __name__ == "__main__":
     .foreachBatch(lambda current_df, epoc_id: save_to_mongodb_collection(current_df, epoc_id, mongodb_collection_name)) \
     .start()
 
+# Get country wise total sales
     country_wise_total_sales_count_df = transaction_detail_df_9.groupby('nationality').agg(
-        fn.count('tran_amount').alias('tran_country_count'))
+        fn.count('nationality').alias('tran_country_count'))
 
+# Create collection name for year wise aggregated data mongodb collection
     mongodb_collection_name_1 = "country_wise_total_sales_count"
 
+# Write streaming dataframe into mongodb
     country_wise_total_sales_count_df \
     .writeStream \
     .trigger(processingTime='5 seconds') \
@@ -279,6 +298,7 @@ if __name__ == "__main__":
     .foreachBatch(lambda current_df, epoc_id: save_to_mongodb_collection(current_df, epoc_id, mongodb_collection_name_1)) \
     .start()
 
+# Further processing if required
     card_type_wise_total_sales_count_df = transaction_detail_df_9.groupby('tran_card_type').agg(
         fn.count('tran_card_type').alias('tran_card_type_count'))
 
@@ -288,7 +308,7 @@ if __name__ == "__main__":
     year_country_wise_total_sales_df = transaction_detail_df_9.groupby("tran_year","nationality").agg(
         fn.sum('tran_amount').alias('tran_year_country_total_sales'))
 
-    # Write result dataframe into console for debugging purpose
+# Write result dataframe into console for debugging purpose
     trans_detail_write_stream = year_country_wise_total_sales_df \
         .writeStream \
         .trigger(processingTime='5 seconds') \
