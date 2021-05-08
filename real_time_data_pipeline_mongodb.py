@@ -138,6 +138,7 @@ if __name__ == "__main__":
 
 #Deserialize kafka value and flatten prepare dataframe
     transaction_detail_df_1 = transaction_detail_df.selectExpr("CAST(value AS STRING)")
+# Or transaction_detail_df_1.select(from_json(col("value").cast("string"), transaction_detail_schema).alias("message_detail"))
 
     transaction_detail_df_2 = transaction_detail_df_1.select(from_json(col("value"), transaction_detail_schema).alias("message_detail"))
 
